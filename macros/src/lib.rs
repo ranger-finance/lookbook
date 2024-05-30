@@ -61,7 +61,7 @@ pub fn preview(_attrs: TokenStream, input: TokenStream) -> TokenStream {
 
                 // from_states.push(quote! {let #pat = <#ty>::from_state(#pat);});
                 from_states.push(quote! {
-                    tracing::info!("hello world 4, {:?}, {:?}", stringify!(#pat), stringify!(#ty));
+                    // tracing::info!("hello world 4, {:?}, {:?}", stringify!(#pat), stringify!(#ty));
                 });
 
                 // let ty_name = ty.span().source_text().unwrap_or_else(|| "".to_string());
@@ -106,9 +106,9 @@ pub fn preview(_attrs: TokenStream, input: TokenStream) -> TokenStream {
         1,
     );
 
-    let debug_stuff = vec![quote! {
-        tracing::info!("look------------------ {:?}", #look);
-    }];
+    // let debug_stuff = vec![quote! {
+    //     tracing::info!("look------------------ {:?}", #look);
+    // }];
 
     let name_literal = quote! { #name };
 
@@ -126,7 +126,7 @@ pub fn preview(_attrs: TokenStream, input: TokenStream) -> TokenStream {
 
                 // let controls = rsx! { #controls };
 
-                #(#debug_stuff)*
+                // #(#debug_stuff)*
 
                 #(#from_states)*
                 // #debug_stuff
