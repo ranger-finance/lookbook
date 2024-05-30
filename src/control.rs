@@ -1,24 +1,22 @@
-use std::fmt::Arguments;
-
 use dioxus::prelude::*;
-use dioxus_material::use_theme;
+// use dioxus_material::use_theme;
 use serde::{Deserialize, Serialize};
 
 /// A controllable property.
-pub trait Control<'a>: Sized {
+pub trait Control: Sized {
     type State;
 
     /// Create the initial state.
     fn state(default: Option<impl Into<Self>>) -> Self::State;
 
     /// Convert the current state to `Self`.
-    fn from_state<T>(cx: Scope<'a, T>, state: &Self::State) -> Self;
+    fn from_state(state: Signal<&Self::State>) -> Self;
 
     /// Render the controller element.
-    fn control(cx: Scope<'a>, name: &'static str, state: &'a UseState<Self::State>) -> Element<'a>;
+    fn control(name: &'static str, state: Signal<Self::State>) -> Element;
 }
 
-impl<'a> Control<'a> for &'a str {
+impl Control for &str {
     type State = String;
 
     fn state(default: Option<impl Into<Self>>) -> Self::State {
@@ -28,15 +26,21 @@ impl<'a> Control<'a> for &'a str {
             .unwrap_or_default()
     }
 
-    fn from_state<T>(cx: Scope<'a, T>, state: &Self::State) -> Self {
-        cx.bump().alloc(state.clone())
+    fn from_state(state: Signal<&Self::State>) -> Self {
+        let value_ref = &state.read();
+        value_ref.as_str()
     }
 
-    fn control(cx: Scope<'a>, name: &'static str, state: &'a UseState<Self::State>) -> Element<'a> {
-        render!(Input {
-            value: &***state,
-            oninput: move |event: FormEvent| state.set(event.data.value.clone())
-        })
+    fn control(_name: &'static str, mut state: Signal<Self::State>) -> Element {
+        let value = "{state.read()}";
+
+        rsx! {Input {
+            value: value,
+            oninput: move |event: FormEvent| {
+                let val = event.data.value().clone();
+               *state.write() = val;
+            }
+        }}
     }
 }
 
@@ -49,19 +53,24 @@ impl<T> From<T> for Json<T> {
     }
 }
 
-impl<'a, T> IntoDynNode<'a> for Json<T>
-where
-    T: Clone + Default + Deserialize<'a> + Serialize,
-{
-    fn into_vnode(self, cx: &'a ScopeState) -> dioxus::core::DynamicNode<'a> {
-        let s = serde_json::to_string(&self.0).unwrap();
-        cx.make_node(s)
-    }
-}
+// impl<T> IntoDynNode for Json<T>
+// where
+//     T: Clone + Default + Deserialize + Serialize,
+// {
+//     fn into_vnode(self, cx: &ScopeState) -> dioxus::core::DynamicNode<'a> {
+//         let s = serde_json::to_string(&self.0).unwrap();
+//         cx.make_node(s)
+//     }
 
-impl<'a, T> Control<'a> for Json<T>
+//     fn into_dyn_node(self, cx: &'a ScopeState) -> dioxus::core::DynamicNode<'a> {
+//         let s = serde_json::to_string(&self.0).unwrap();
+//         cx.make_node(s)
+//     }
+// }
+
+impl<T> Control for Json<T>
 where
-    T: Clone + Default + Deserialize<'a> + Serialize,
+    T: 'static + Clone + Default + Deserialize<'static> + Serialize,
 {
     type State = T;
 
@@ -69,37 +78,46 @@ where
         default.map(Into::into).unwrap_or_default().0
     }
 
-    fn from_state<U>(cx: Scope<'a, U>, state: &Self::State) -> Self {
-        Self(state.clone())
+    fn from_state(state: Signal<&Self::State>) -> Self {
+        Self(state.read().clone())
     }
 
-    fn control(cx: Scope<'a>, name: &'static str, state: &'a UseState<Self::State>) -> Element<'a> {
-        let json = serde_json::to_string(&**state).unwrap();
+    fn control(_name: &'static str, mut state: Signal<Self::State>) -> Element {
+        // let value = state.read();
+        // let value = &*value;
+        // let json = ;
+        // let value = json.as_str();
+        let value = "{serde_json::to_string(&*state.read()).unwrap().as_str()}";
+        // let json = serde_json::to_string(&*state.read()).unwrap();
+        // let value = json.as_str();
+        // let thing = "stuff";
 
-        render!(Input {
-            value: "{json}",
+        rsx! {Input {
+            // value: "{json}",
+            value: value,
             oninput: move |event: FormEvent| {
-                let value = cx.bump().alloc(event.data.value.clone());
-                if let Ok(new_state) = serde_json::from_str(value) {
-                    state.set(new_state);
+                let value = "{event.data.value().clone().as_str()}";
+                // let value = clone.as_str();
+                if let Ok(new_state) = serde_json::from_str::<T>(value) {
+                    *state.write() = new_state;
                 }
             }
-        })
+        }}
     }
 }
 
 #[component]
-fn Input<'a>(cx: Scope<'a>, value: &'a str, oninput: EventHandler<'a, FormEvent>) -> Element<'a> {
-    let theme = use_theme(cx);
+fn Input(value: &'static str, oninput: EventHandler<FormEvent>) -> Element {
+    // let theme = use_theme(cx);
 
-    render!(input {
+    rsx! {input {
         border: "2px solid #e7e7e7",
         padding: "10px",
-        border_radius: &*theme.border_radius_small,
-        font_size: "{theme.label_small}px",
+        // border_radius: &*theme.border_radius_small,
+        // font_size: "{theme.label_small}px",
         outline: "none",
         background: "none",
-        value: *value,
+        value: "{value}",
         oninput: move |event| oninput.call(event)
-    })
+    }}
 }

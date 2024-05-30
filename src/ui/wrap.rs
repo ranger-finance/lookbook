@@ -1,28 +1,27 @@
 use crate::{prefixed_route::PrefixedRoute, ui::pane::HorizontalPane, Route, CONTEXT};
 use dioxus::prelude::*;
-use dioxus_material::{use_theme, Icon, IconFont, IconKind};
-use dioxus_router::prelude::*;
+// use dioxus_material::{use_theme, Icon, IconFont, IconKind};
 
 /// The main application wrap component.
 #[component]
-pub fn Wrap(cx: Scope) -> Element {
-    let query = use_state(cx, || String::new());
-    let elements = use_memo(cx, query, move |_| {
+pub fn Wrap() -> Element {
+    let mut query = use_signal(|| String::new());
+    let elements = use_memo(move || {
         CONTEXT
             .try_with(|cx| {
                 cx.borrow()
                     .iter()
-                    .filter(|(name, _)| name.to_lowercase().contains(&query.to_lowercase()))
+                    .filter(|(name, _)| name.to_lowercase().contains(&query.read().to_lowercase()))
                     .copied()
                     .collect::<Vec<_>>()
             })
             .unwrap()
     });
 
-    let navigator = use_navigator(cx);
-    let theme = use_theme(cx);
+    let navigator = use_navigator();
+    // let theme = use_theme(cx);
 
-    let left = render!(
+    let left = rsx! {
         div {
             flex: 1,
             display: "flex",
@@ -42,12 +41,12 @@ pub fn Wrap(cx: Scope) -> Element {
                 h1 {
                     cursor: "pointer",
                     margin: "0",
-                    onclick: |_| {
+                    onclick: move |_| {
                         navigator.push(Route::Home);
                     },
                     "Lookbook"
                 }
-                Icon { kind: IconKind::Settings }
+                // Icon { kind: IconKind::Settings }
             }
             input {
                 placeholder: "Search",
@@ -57,21 +56,21 @@ pub fn Wrap(cx: Scope) -> Element {
                 margin_bottom: "20px",
                 padding: "10px",
                 border: "2px solid #999",
-                border_radius: &*theme.border_radius_small,
+                // border_radius: &*theme.border_radius_small,
                 outline: "none",
                 background: "none",
                 font_size: 14.,
-                oninput: move |event: FormEvent| query.set(event.value.clone())
+                oninput: move |event: FormEvent| query.set(event.value().clone())
             }
-            elements.into_iter().map(move | (name, _) | { render!(NavItem { route :
-            Route::ComponentScreen { name : name.to_string(), }, label : "{name}" }) })
+            {elements.read().iter().map(move | (name, _) | { rsx!{NavItem { route :
+            Route::ComponentScreen { name : name.to_string(), }, label : "{name}" }} })}
         }
-    );
+    };
 
-    let right = render!(Outlet::<PrefixedRoute> {});
+    let right = rsx! {Outlet::<PrefixedRoute> {}};
 
-    cx.render(rsx! {
-        IconFont {}
+    rsx! {
+        // IconFont {}
         div {
             position: "absolute",
             top: 0,
@@ -85,29 +84,29 @@ pub fn Wrap(cx: Scope) -> Element {
             padding: 0,
             HorizontalPane { left: left, right: right }
         }
-    })
+    }
 }
 
 /// Navigation rail item component.
 #[component]
-fn NavItem<'a>(cx: Scope<'a>, route: Route, label: &'a str) -> Element<'a> {
-    let navigator = use_navigator(cx);
-    let current_route: Option<PrefixedRoute> = use_route(cx);
-    let theme = use_theme(cx);
+fn NavItem(route: Route, label: String) -> Element {
+    let navigator = use_navigator();
+    // let current_route: PrefixedRoute = use_route();
+    // let theme = use_theme(cx);
 
-    let prefixed_route = PrefixedRoute(route.clone());
-    let is_selected = current_route.as_ref() == Some(&prefixed_route);
+    // let prefixed_route = PrefixedRoute(route.clone());
+    // let is_selected = &current_route == &prefixed_route;
 
-    render!(
+    rsx! {
         div {
             padding: "10px 15px",
-            border_radius: &*theme.border_radius_small,
+            // border_radius: &*theme.border_radius_small,
             cursor: "pointer",
-            background: if is_selected { &theme.secondary_container_color } else { "" },
-            onclick: |_| {
+            // background: if is_selected { &theme.secondary_container_color } else { "" },
+            onclick: move |_| {
                 navigator.push(PrefixedRoute(route.clone()));
             },
-            "{label}"
+            "{label.as_str()}"
         }
-    )
+    }
 }

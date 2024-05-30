@@ -1,0 +1,29 @@
+# [package]
+# name = ""
+# version = "0.1.0"
+# edition = "2021"
+
+# [lib]
+# proc-macro = true
+
+# [dependencies]
+# quote = "1.0.33"
+# syn = { version = "2.0.38", features = ["full"] }
+# dioxus-rsx = { git = "https://github.com/dioxuslabs/dioxus" }
+# dioxus = { version = "0.5.1", features = ["web", "router", "serde"] }
+# proc-macro2 = "1.0.69"
+# prettyplease = "0.2.15"
+
+
+[package]
+name = "test-macros"
+version = "0.1.0"
+edition = "2021"
+
+[lib]
+proc-macro = true
+
+[dependencies]
+quote = "1.0"
+syn = { version = "1.0", features = ["full"] }
+tracing = "0.1"

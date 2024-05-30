@@ -1,5 +1,5 @@
+use core::cell::RefCell;
 use dioxus::prelude::*;
-use dioxus_router::prelude::*;
 
 pub use lookbook_macros::preview;
 
@@ -14,7 +14,7 @@ mod prefixed_route;
 pub(crate) use prefixed_route::PrefixedRoute;
 
 #[doc(hidden)]
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, PartialEq)]
 pub struct Preview {
     name: &'static str,
     component: Component,
@@ -48,20 +48,38 @@ enum Route {
 }
 
 #[component]
-fn Home<'a>(cx: Scope<'a>) -> Element<'a> {
+fn Home() -> Element {
     #[allow(non_snake_case)]
     let Child = HOME
         .try_with(|cell| cell.borrow().clone().unwrap())
         .unwrap();
-    render!(Child {})
+    rsx! {Child {}}
 }
 
+// #[component]
+// fn Home() -> Element {
+//     // let component_map: ComponentMap = HashMap::new();
+//     // Populate your map with component functions
+
+//     use_context_provider(|| component_map);
+
+//     rsx!(ComponentScreen {
+//         name: "example".to_string()
+//     })
+// }
+
 #[component]
-fn ComponentScreen(cx: Scope, name: String) -> Element {
+fn ComponentScreen(name: String) -> Element {
     #[allow(non_snake_case)]
     let (_name, Child) = CONTEXT
-        .try_with(|cx| cx.borrow().iter().find(|(n, _)| n == name).unwrap().clone())
+        .try_with(|cx| {
+            cx.borrow()
+                .iter()
+                .find(|(n, _)| *n == name)
+                .unwrap()
+                .clone()
+        })
         .unwrap();
 
-    render!(Child {})
+    rsx! {Child {}}
 }
